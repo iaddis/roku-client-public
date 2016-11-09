@@ -1,8 +1,8 @@
 title=APPTITLE
-version=3.1.6
+version=3.1.7
 major_version=3
 minor_version=1
-build_version=6
+build_version=7
 subtitle=The best personal and online content streaming app!
 description=Plex organizes all of your personal media, wherever you keep it, so you can enjoy it on any device. With Plex, you can easily stream your videos, music, photos and home movies to your Roku using your Plex Media Server (available for free at https://plex.tv/). Plex allows you to easily share media with friends and family, so you all have more to choose from. You can even sync your media to your mobile device or favorite cloud storage provider, such as Google Drive, Dropbox, Bitcasa or Box, so you can stream to your Roku even when your computer is offline.
 mm_icon_focus_hd=pkg:/images/plex-logo-hd-store-classic.png
