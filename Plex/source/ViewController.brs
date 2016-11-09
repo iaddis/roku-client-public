@@ -83,6 +83,7 @@ Function createViewController() As Object
     controller.SystemLog = CreateObject("roSystemLog")
     controller.SystemLog.SetMessagePort(controller.GlobalMessagePort)
     controller.SystemLog.EnableType("bandwidth.minute")
+    controller.SystemLog.EnableType("http.error")
 
     controller.backButtonTimer = createTimer()
     controller.backButtonTimer.SetDuration(60000, true)
@@ -683,6 +684,8 @@ Function vcProcessOneMessage(timeout)
             msgInfo = msg.GetInfo()
             if msgInfo.LogType = "bandwidth.minute" then
                 GetGlobalAA().AddReplace("bandwidth", msgInfo.Bandwidth)
+            else if msgInfo.LogType = "http.error" then
+                Debug("http error: " + tostr(msgInfo, 1))
             end if
         else if msg.isRemoteKeyPressed() and msg.GetIndex() = 10 then
             m.CreateContextMenu()

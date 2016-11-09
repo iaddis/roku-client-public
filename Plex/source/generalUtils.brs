@@ -9,13 +9,23 @@
 '
 'Always returns a string
 '******************************************************
-Function tostr(any)
+Function tostr(any as dynamic, aaDepth=0 as integer, tryToString=true as boolean) as string
     ret = AnyToString(any)
+    if ret = invalid and tryToString and type(any) = "roAssociativeArray" and type(any.ToString) = "roFunction" then
+        ret = any.ToString()
+    end if
+
+    if ret = invalid and type(any) = "roAssociativeArray" and aaDepth > 0 then
+        ret = "roAssociativeArray" + Chr(10)
+        for each key in any
+            ret = ret + key + ": " + tostr(any[key], aaDepth - 1) + Chr(10)
+        next
+    end if
+
     if ret = invalid ret = type(any)
     if ret = invalid ret = "unknown" 'failsafe
     return ret
 End Function
-
 
 '******************************************************
 'isint
