@@ -16,9 +16,6 @@ Function newPlexMediaServer(pmsUrl, pmsName, machineID) As Object
     pms.online = false
     pms.local = false
     pms.AccessToken = invalid
-    pms.StopVideo = stopTranscode
-    pms.StartTranscode = StartTranscodingSession
-    pms.PingTranscode = pingTranscode
     pms.CreateRequest = pmsCreateRequest
     pms.GetQueryResponse = xmlContent
     pms.Timeline = pmsTimeline
@@ -478,28 +475,6 @@ Function pmsConstructVideoItem(item, seekValue, allowDirectPlay, forceDirectPlay
     return video
 End Function
 
-Function stopTranscode()
-    if m.Cookie <> invalid then
-        stopTransfer = CreateObject("roUrlTransfer")
-        stopTransfer.SetUrl(m.serverUrl + "/video/:/transcode/segmented/stop")
-        stopTransfer.AddHeader("Cookie", m.Cookie)
-        content = stopTransfer.GetToString()
-    else
-        Debug("Can't send stop request, cookie wasn't set")
-    end if
-End Function
-
-Function pingTranscode()
-    if m.Cookie <> invalid then
-        pingTransfer = CreateObject("roUrlTransfer")
-        pingTransfer.SetUrl(m.serverUrl + "/video/:/transcode/segmented/ping")
-        pingTransfer.AddHeader("Cookie", m.Cookie)
-        content = pingTransfer.GetToString()
-    else
-        Debug("Can't send ping request, cookie wasn't set")
-    end if
-End Function
-
 '* Constructs a Full URL taking into account relative/absolute. Relative to the
 '* source URL, and absolute URLs, so
 '* relative to the server URL
@@ -582,23 +557,6 @@ Function TranscodedImage(queryUrl, imagePath, width, height, forceBackgroundColo
         image = image + "&X-Plex-Token=" + m.AccessToken
     end if
     return image
-End Function
-
-'* Starts a transcoding session by issuing a HEAD request and captures
-'* the resultant session ID from the cookie that can then be used to
-'* access and stop the transcoding
-Function StartTranscodingSession(videoUrl)
-    cookiesRequest = CreateObject("roUrlTransfer")
-    cookiesRequest.SetUrl(videoUrl)
-    cookiesHead = cookiesRequest.Head()
-    m.Cookie = cookiesHead.GetResponseHeaders()["set-cookie"]
-
-    if m.Cookie <> invalid then
-        arr = strTokenize(m.Cookie, ";")
-        m.Cookie = arr[0]
-    end if
-
-    return m.Cookie
 End Function
 
 '*

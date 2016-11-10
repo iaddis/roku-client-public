@@ -22,9 +22,6 @@ Function MyPlexManager() As Object
         obj.owned = false
         obj.home = false
         obj.online = true
-        obj.StopVideo = mpStopVideo
-        obj.StartTranscode = mpStartTranscode
-        obj.PingTranscode = mpPingTranscode
         obj.TranscodedImage = mpTranscodedImage
         obj.TranscodingVideoUrl = mpTranscodingVideoUrl
         obj.GetQueryResponse = mpGetQueryResponse
@@ -282,24 +279,6 @@ Function mpTranscodingVideoUrl(videoUrl As String, item As Object, httpHeaders A
     if NOT m.CheckTranscodeServer(true) then return invalid
 
     return m.TranscodeServer.TranscodingVideoUrl(videoUrl, item, httpHeaders, seekValue)
-End Function
-
-Function mpStartTranscode(videoUrl)
-    if NOT m.CheckTranscodeServer() then return ""
-
-    return m.TranscodeServer.StartTranscode(videoUrl)
-End Function
-
-Function mpStopVideo()
-    if NOT m.CheckTranscodeServer() then return invalid
-
-    return m.TranscodeServer.StopVideo()
-End Function
-
-Function mpPingTranscode()
-    if NOT m.CheckTranscodeServer() then return invalid
-
-    return m.TranscodeServer.PingTranscode()
 End Function
 
 Function mpTranscodedImage(queryUrl, imagePath, width, height) As String

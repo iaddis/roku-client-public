@@ -18,6 +18,7 @@ Function createVideoPlayerScreen(metadata, seekValue, directPlayOptions, viewCon
     obj.DirectPlayOptions = directPlayOptions
     obj.CreateVideoPlayer = videoPlayerCreateVideoPlayer
     obj.StartTranscodeSessionRequest = videoPlayerStartTranscodeSessionRequest
+    obj.SendTranscoderCommand = videoPlayerSendTranscoderCommand
 
     obj.pingTimer = invalid
     obj.lastPosition = 0
@@ -184,34 +185,31 @@ Function videoPlayerCreateVideoPlayer()
     ' If we're playing the video from the server, add appropriate X-Plex
     ' headers.
     if server.IsRequestToServer(videoItem.StreamUrls[0]) then
+        Debug("Adding Plex headers since this is a request to the server: " + tostr(videoItem.StreamUrls[0]))
         AddPlexHeaders(player, server.AccessToken)
         if server.IsPlexTV() and MyPlexManager().IsRestricted then
             Debug("Resolve plex.tv redirect before play for managed user")
             videoItem.StreamUrls[0] = resolveRedirect(videoItem.StreamUrls[0], server.AccessToken)
         end if
+    else
+        Debug("Not adding Plex headers since this is not a request to the server: " + tostr(videoItem.StreamUrls[0]))
     end if
+
+    m.isTranscoded = videoItem.isTranscoded
+    m.videoItem = videoItem
 
     player.SetCertificatesFile("common:/certs/ca-bundle.crt")
     player.SetCertificatesDepth(5)
     player.SetContent(videoItem)
+    player.SetPositionNotificationPeriod(1)
 
-    if videoItem.IsTranscoded then
-        cookie = server.StartTranscode(videoItem.StreamUrls[0])
-        if cookie <> invalid then
-            player.AddHeader("Cookie", cookie)
-        end if
-    else
+    if not m.isTranscoded then
         for each header in videoItem.IndirectHttpHeaders
             for each name in header
                 player.AddHeader(name, header[name])
             next
         next
     end if
-
-    player.SetPositionNotificationPeriod(1)
-
-    m.IsTranscoded = videoItem.IsTranscoded
-    m.videoItem = videoItem
 
     return player
 End Function
@@ -285,7 +283,7 @@ Function videoPlayerHandleMessage(msg) As Boolean
             Debug("MediaPlayer::playVideo::VideoScreenEvent::isScreenClosed: position -> " + tostr(m.lastPosition))
             NowPlayingManager().location = "navigation"
             m.UpdateNowPlaying()
-            if m.IsTranscoded then server.StopVideo()
+            m.SendTranscoderCommand("stop")
 
             ' Send an analytics event.
             startOffset = int(m.SeekValue/1000)
@@ -357,13 +355,13 @@ Function videoPlayerHandleMessage(msg) As Boolean
             Debug("MediaPlayer::playVideo::VideoScreenEvent::isPartialResult: position -> " + tostr(m.lastPosition))
             m.playState = "stopped"
             m.UpdateNowPlaying()
-            if m.IsTranscoded then server.StopVideo()
+            m.SendTranscoderCommand("stop")
         else if msg.isFullResult() then
             Debug("MediaPlayer::playVideo::VideoScreenEvent::isFullResult: position -> " + tostr(m.lastPosition))
             m.isPlayed = true
             m.playState = "stopped"
             m.UpdateNowPlaying()
-            if m.IsTranscoded then server.StopVideo()
+            m.SendTranscoderCommand("stop")
         else if msg.isStreamStarted() then
             Debug("MediaPlayer::playVideo::VideoScreenEvent::isStreamStarted: position -> " + tostr(m.lastPosition))
             Debug("Message data -> " + tostr(msg.GetInfo()))
@@ -446,8 +444,8 @@ End Sub
 Sub videoPlayerOnTimerExpired(timer)
     if timer.Name = "ping" then
         m.StartTranscodeSessionRequest()
-        m.Item.server.PingTranscode()
-    else if timer.Name = "timeline"
+        m.SendTranscoderCommand("ping")
+    else if timer.Name = "timeline" then
         m.UpdateNowPlaying(true)
     end if
 End Sub
@@ -910,3 +908,11 @@ End Function
 Function VideoPlaybackActive() as boolean
     return (GetViewController().IsActiveScreen(VideoPlayer()) and VideoPlayer().playState = "playing")
 End Function
+
+Sub videoPlayerSendTranscoderCommand(command as string)
+    if m.isTranscoded then
+        path = "/video/:/transcode/universal/" + command + "?session=" + GetGlobalAA().Lookup("rokuUniqueID")
+        request = m.videoItem.TranscodeServer.CreateRequest("", path)
+        m.ViewController.StartRequest(request, invalid, {requestType: "ignored"})
+    end if
+End Sub
