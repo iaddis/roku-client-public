@@ -1,0 +1,2 @@
+FIXES:
+- Fix possible video playback issues using PMS 1.2.6+
