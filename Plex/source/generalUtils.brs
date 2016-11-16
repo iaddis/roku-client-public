@@ -452,3 +452,9 @@ End Function
 Function TimeSinceLastKeyPress() as integer
     return GetGlobal("roDeviceInfo").TimeSinceLastKeyPress()
 End Function
+
+Sub SetConnectionTimeout(obj as dynamic, seconds as integer)
+    if obj <> invalid and FindMemberFunction(obj, "SetConnectionTimeout") <> invalid then
+        obj.SetConnectionTimeout(seconds)
+    end if
+End Sub

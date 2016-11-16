@@ -31,6 +31,7 @@ Function AudioPlayer()
 
         obj.player = CreateObject("roAudioPlayer")
         obj.player.SetMessagePort(obj.Port)
+        SetConnectionTimeout(obj.player, 30)
 
         obj.Context = invalid
         obj.CurIndex = invalid

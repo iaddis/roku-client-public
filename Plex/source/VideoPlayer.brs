@@ -171,6 +171,7 @@ Function videoPlayerCreateVideoPlayer()
 
     player = CreateObject("roVideoScreen")
     player.SetMessagePort(m.Port)
+    SetConnectionTimeout(player, 30)
 
     rokuVersion = GetGlobal("rokuVersionArr", [0])
     if CheckMinimumVersion(rokuVersion, [4]) then
