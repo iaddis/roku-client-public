@@ -1,0 +1,2 @@
+FIXES:
+- Fix playback failures caused by 7.5 firmware.
