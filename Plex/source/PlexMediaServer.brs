@@ -602,6 +602,7 @@ Function universalTranscodingVideoUrl(videoUrl As String, item As Object, seekVa
     builder.AddParam("protocol", "hls")
     builder.AddParam("path", fullKey)
     builder.AddParam("session", GetGlobal("rokuUniqueId"))
+    builder.AddParam("waitForSegments", "1")
     builder.AddParam("offset", tostr(seekValue))
     builder.AddParam("directPlay", "0")
 
