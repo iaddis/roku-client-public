@@ -1,20 +1,13 @@
-# Plex Classic/Roku
+## [DEPRECATED] roku-client-public (Plex Classic for Roku)
 
-The official Plex client for the Roku. This client is maintained by a
-combination of Plex developers and community volunteers. We *love* contributors,
-so please don't be shy to fork and hack away.
+This repo and channel have been deprecated. Please install the official Plex version through the [Roku Channel Store](https://my.roku.com/account/add?channel=plex). The channel store is also available on your Roku device.
+
+- [Plex for Roku Support](https://support.plex.tv/hc/en-us/sections/200305393-Roku)
+- [Plex for Roku Forums](https://forums.plex.tv/categories/roku-streaming-players)
 
 ## Installation
 
-If you're just trying to install the channel normally, you don't need to be
-here. You can install the released version of the channel using the Roku
-Channel Store. There's also occasionally a test version of the channel
-released as a private channel, sort of like a beta. You can install that
-using the private channel code `plextest`.
-
-Ok, if you're still reading then you presumably want to install from source
-and hopefully make some useful changes. You don't need to download or install
-anything from Roku, but you should take a look at Roku's
+You don't need to download or install anything from Roku, but you should take a look at Roku's
 [developer site](http://www.roku.com/developer). In addition to the downloadable
 PDF documentation, you can [browse the docs online](http://sdkdocs.roku.com/).
 Roku's docs are well above average.
@@ -57,15 +50,4 @@ messages to a console that you can tail using telnet. It's as simple as
 
     telnet $ROKU_DEV_TARGET 8085
 
-## Contributing
-
-Did I already mention we love contributors? Please fork and hack away. Let us
-know in the forums what you're working on. And of course there's GitHub's
-standard notes on how best to contribute:
-
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
 
