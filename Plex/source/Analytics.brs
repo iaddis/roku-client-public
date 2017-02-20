@@ -99,6 +99,8 @@ Sub analyticsTrackTiming(time, category, variable, label, customVars={})
 End Sub
 
 Sub analyticsSendTrackingRequest(vars)
+    return
+    
     ' Only if we're enabled
     if RegRead("analytics", "preferences", "1") <> "1" then return
 

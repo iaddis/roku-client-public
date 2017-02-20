@@ -161,6 +161,8 @@ Function videoPlayerCreateVideoPlayer()
         end if
     end if
 
+    PrintAA(videoItem)
+
     videoItem.OrigReleaseDate = videoItem.ReleaseDate
     if videoItem.IsTranscoded then
         server = videoItem.TranscodeServer
@@ -579,7 +581,7 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
         end if
 
         if audioStream <> invalid then
-            audioChannels = firstOf(audioStream.channels, "0").toint()
+            audioChannels = audioStream.channels
         else
             audioChannels = 0
         end if
@@ -610,11 +612,14 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
     audioLanguageForceable = true
 
     if part <> invalid then
+
+'        PrintAA(part)
+
         if part.hasChapterVideoStream then numVideoStreams = 1
         for each stream in part.streams
             if stream.streamType = "2" then
                 numAudioStreams = numAudioStreams + 1
-                numChannels = firstOf(stream.channels, "0").toint()
+                numChannels = stream.channels
                 if numChannels <= 2 then
                     if stereoCodec = invalid then
                         stereoCodec = stream.codec
@@ -657,6 +662,73 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
     Debug("Media item audio language forceable: " + tostr(audioLanguageForceable))
     Debug("Media item aspect ratio: " + tostr(mediaItem.aspectRatio))
 
+    deviceInfo = GetGlobal("roDeviceInfo")
+
+    ' Determine if we can decode this video
+    if videoStream <> invalid
+        stream = videoStream
+            PrintAA(stream)
+        args = {
+            Codec: stream.codec, 
+            Profile : stream.profile, 
+            Container: mediaItem.container, 
+            Level: stream.level
+        }
+
+        if args.Codec = "hevc"
+            args.Delete("Level")
+        endif
+
+        cd = deviceInfo.CanDecodeVideo(args)
+        if cd.result = false
+            PrintAA(stream)
+            PrintAA(args)
+            PrintAA(cd)
+            return false
+        endif
+    endif
+
+        ' Determine if we can decode this audio
+    if audioStream <> invalid
+        stream = audioStream
+            PrintAA(stream)
+        args =  {
+            Codec:  stream.codec, 
+            Container: mediaItem.container
+            ChCnt : stream.channels
+            ', SampleRate : stream.samplingRate
+        }
+        if stream.profile <> invalid
+            args.Profile = stream.profile
+        endif
+
+        if args.Codec = "dca"
+            args.Codec = "dts"
+            args.Delete("Profile")
+        endif
+
+        if args.Codec = "dca-ma"
+            args.Codec = "dts"
+            args.Delete("Profile")
+        endif
+
+        if surroundSoundDCA = false AND args.Codec = "dts"
+            PrintAA(stream)
+            Debug("DTS is manually disabled")
+            return false
+        endif
+
+
+        cd = deviceInfo.CanDecodeAudio(args)
+        if cd.result = false
+            PrintAA(stream)
+            PrintAA(args)
+            PrintAA(cd)
+            return false
+        endif
+    endif
+
+
     ' If no streams are provided, treat the Media audio codec as stereo.
     if numAudioStreams = 0 then
         stereoCodec = mediaItem.audioCodec
@@ -681,20 +753,20 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
         return false
     end if
 
-    if mediaItem.height > 1080 then
-        Debug("videoCanDirectPlay: height is greater than 1080: " + tostr(mediaItem.height))
-        return false
-    end if
+    ' if mediaItem.height > 1080 then
+    '    Debug("videoCanDirectPlay: height is greater than 1080: " + tostr(mediaItem.height))
+    '    return false
+    ' end if
 
-    if surroundStreamFirst AND surroundCodec = "aac" then
-        Debug("videoCanDirectPlay: first audio stream is 5.1 AAC")
-        return false
-    end if
+    'if surroundStreamFirst AND surroundCodec = "aac" then
+    '    Debug("videoCanDirectPlay: first audio stream is 5.1 AAC")
+    '    return false
+    'end if
 
-    if NOT audioLanguageForceable then
-        Debug("videoCanDirectPlay: secondary audio stream is selected and can't be forced by language")
-        return false
-    end if
+''    if NOT audioLanguageForceable then
+''        Debug("videoCanDirectPlay: secondary audio stream is selected and can't be forced by language")
+''        return false
+''    end if
 
 
     if mediaItem.container = "mp4" OR mediaItem.container = "mov" OR mediaItem.container = "m4v" then
@@ -703,7 +775,7 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
             return false
         end if
 
-        if videoStream <> invalid AND firstOf(videoStream.refFrames, "0").toInt() > GetGlobal("maxRefFrames", 0) then
+        if videoStream <> invalid AND videoStream.refFrames > GetGlobal("maxRefFrames", 0) then
             Debug("videoCanDirectPlay: too many ReFrames: " + tostr(videoStream.refFrames))
             return false
         end if
@@ -760,18 +832,18 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
             return false
         end if
 
-        if (mediaItem.videoCodec <> "h264" AND mediaItem.videoCodec <> "mpeg4") then
+        if (mediaItem.videoCodec <> "h264" AND mediaItem.videoCodec <> "mpeg4" AND mediaItem.videoCodec <> "hevc") then
             Debug("videoCanDirectPlay: vc not h264/mpeg4")
             return false
         end if
 
         if videoStream <> invalid then
-            if firstOf(videoStream.refFrames, "0").toInt() > GetGlobal("maxRefFrames", 0) then
+            if videoStream.refFrames > GetGlobal("maxRefFrames", 0) then
                 Debug("videoCanDirectPlay: too many ReFrames: " + tostr(videoStream.refFrames))
                 return false
             end if
 
-            if firstOf(videoStream.bitDepth, "0").toInt() > 8 then
+            if videoStream.bitDepth > 8 then
                 Debug("videoCanDirectPlay: bitDepth too high: " + tostr(videoStream.bitDepth))
                 return false
             end if
@@ -779,6 +851,11 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
 
         if audioStream <> invalid then
             if surroundSound AND audioStream.codec = "ac3" then
+                mediaItem.canDirectPlay = true
+                return true
+            end if
+
+            if surroundSound AND audioStream.codec = "truehd" then
                 mediaItem.canDirectPlay = true
                 return true
             end if

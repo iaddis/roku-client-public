@@ -372,6 +372,33 @@ Function vcCreatePhotoPlayer(context, contextIndex=invalid, show=true, shuffled=
     return screen
 End Function
 
+
+
+
+
+function videoMediaString(media)
+    format = ""
+
+                if media.audioChannelLayout <> invalid then
+                    format = format + " " + stream.audioChannelLayout
+                end if
+
+
+    mediaName = firstOf(media.videoResolution + "p", "")
+    mediaName = mediaName + " (" + firstOf(media.videoCodec, "")
+    mediaName = mediaName + " " + firstOf(format, "")
+    mediaName = mediaName + " " + firstOf(media.container, "")
+
+    ' media.audioCodec: I am leaving this out to remove confustion (I hope), Unless
+    ' we present the option to select audio stream as a serparate line item.
+    ' mediaName = mediaName + "/" + UCase(firstOf(media.audioCodec, "?"))
+
+    mediaName = mediaName + ") " + tostr(media.bitrate) + "kbps"
+
+    return mediaName
+end function
+
+
 Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=true)
     ' Create a facade screen for instant feedback.
     facade = CreateObject("roGridScreen")
@@ -382,6 +409,46 @@ Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=tr
 
     ' Make sure we have full details before trying to play.
     metadata.ParseDetails()
+
+    skipSelection = false    
+
+
+    if NOT(skipSelection) and NOT(metadata.isManuallySelectedMediaItem = true) and metadata.media <> invalid and metadata.media.count() > 1 then
+        dlg = createBaseDialog()
+        dlg.Title = "Select a Quality"
+
+        mediaIndex = 0
+        for each media in metadata.media
+            if media.AsString <> invalid then
+                mediaName = media.AsString
+            else
+                mediaName = videomediaString(media)
+                media.AsString = mediaName
+            end if
+
+            dlg.SetButton(tostr(mediaIndex), mediaName)
+            mediaIndex = mediaIndex+1
+        end for
+
+        dlg.Show(true)
+
+        if dlg.Result = invalid or dlg.Result = "invalid" then
+            if preplayscreen <> invalid then
+                preplayScreen.screen.close()
+                if preplayscreen.facade <> invalid then preplayscreen.facade.close()
+            end if
+            return invalid
+        end if
+
+        index = strtoi(dlg.Result)
+        media = metadata.media[index]
+        if media <> invalid then
+            metadata.preferredMediaItem = media
+            metadata.preferredMediaIndex = index
+            metadata.isManuallySelectedMediaItem = true
+        end if
+    end if
+
 
     ' Prompt about resuming if there's an offset and the caller didn't specify a seek value.
     if seekValue = invalid then

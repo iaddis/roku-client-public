@@ -13,7 +13,7 @@ Function createVideoSpringboardScreen(context, index, viewController) As Object
     obj.HandleMessage = videoHandleMessage
 
     obj.checkChangesOnActivate = false
-    obj.refreshOnActivate = false
+    obj.refreshOnActivate = true ' false
     obj.closeOnActivate = false
     obj.Activate = videoActivate
 

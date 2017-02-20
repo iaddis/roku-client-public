@@ -161,6 +161,8 @@ Sub setVideoBasics(video, container, item)
         end if
     end if 
 
+    ' video.ShortDescriptionLine1 = video.ShortDescriptionLine1 + " blahaha "
+
     video.Title = video.ShortDescriptionLine1
 
     video.Rating = firstOf(item@contentRating, container.xml@grandparentContentRating)
@@ -271,8 +273,18 @@ Function parseMediaContainer(MediaItem)
     return container
 End Function
 
+
+Function parseInt(str, defaultVal = "0")
+    return validint(strtoi(firstOf(str, defaultVal)))
+End Function
+
+Function parseFloat(str, defaultVal = "0.0")
+    return val(firstOf(str, defaultVal))
+End Function
+
 Sub ParseVideoMedia(videoItem, sourceUrl) As Object
     mediaArray = CreateObject("roArray", 5, true)
+
 
     ' myPlex content may have had details requested from the node, which may
     ' respond with relative URLs. Resolve URLs now so that when we go to play
@@ -285,6 +297,11 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
         end if
     end if
 
+    ' Debug(videoItem.GenXML(false))
+    ' deviceInfo = GetGlobal("roDeviceInfo")
+
+
+
 	for each MediaItem in videoItem.Media
 		media = CreateObject("roAssociativeArray")
 		media.indirect = false
@@ -293,15 +310,25 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
 		end if
 		media.identifier = MediaItem@id
 		media.audioCodec = MediaItem@audioCodec
+        media.audioProfile = MediaItem@audioProfile
+        media.audioChannels = parseInt(MediaItem@audioChannels) 
 		media.videoCodec = MediaItem@videoCodec
+        media.videoProfile = MediaItem@videoProfile
 		media.videoResolution = MediaItem@videoResolution
+        media.videoFrameRate = MediaItem@videoFrameRate
         media.container = parseMediaContainer(MediaItem)
-        media.aspectRatio = val(firstOf(MediaItem@aspectRatio, "0.0"))
+        media.aspectRatio = parseFloat(MediaItem@aspectRatio)
         media.optimized = MediaItem@optimizedForStreaming
-        media.duration = validint(strtoi(firstOf(MediaItem@duration, "0")))
-        media.bitrate = validint(strtoi(firstOf(MediaItem@bitrate, "0")))
-        media.width = validint(strtoi(firstOf(MediaItem@width, "0")))
-        media.height = validint(strtoi(firstOf(MediaItem@height, "0")))
+        media.duration = parseInt(MediaItem@duration)
+        media.bitrate = parseInt(MediaItem@bitrate)
+        media.width = parseInt(MediaItem@width)
+        media.height = parseInt(MediaItem@height)
+
+
+        media.description = ""
+        if media.container <> invalid then
+            media.description += media.container + " " + numtostr(media.bitrate) + "kbps"
+        endif
 
         bitrateSum = 0
 
@@ -318,9 +345,10 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
             part.videoStream = invalid
             part.exists = MediaPart@exists <> "0"
             part.accessible = MediaPart@accessible <> "0"
-            part.duration = validint(strtoi(firstOf(MediaPart@duration, "0")))
+            part.duration = parseInt(MediaPart@duration)
             part.hasChapterVideoStream = (MediaPart@hasChapterVideoStream = "1")
             part.startOffset = startOffset
+            part.description = media.description
             startOffset = startOffset + part.duration
 
             part.indexes = CreateObject("roAssociativeArray")
@@ -334,13 +362,18 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
 			for each StreamItem in MediaPart.Stream
 				stream = CreateObject("roAssociativeArray")
 				stream.id = StreamItem@id
+                stream.index = parseInt(StreamItem@index)
 				stream.streamType = StreamItem@streamType
 				stream.codec = firstOf(StreamItem@codec, StreamItem@format)
 				stream.language = StreamItem@language
                 stream.languageCode = StreamItem@languageCode
 				stream.selected = StreamItem@selected
-				stream.channels = StreamItem@channels
+				stream.channels = parseInt(StreamItem@channels, "2")
                 stream.key = StreamItem@key
+                stream.bitRate = parseInt(StreamItem@bitrate)
+                stream.bitDepth = parseInt(StreamItem@bitDepth)
+                stream.description = stream.codec
+
 
                 if stream.selected <> invalid then
                     if stream.streamType = "1" then part.videoStream = stream
@@ -350,32 +383,67 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
 
                 if stream.streamType = "1" then
                     stream.cabac = StreamItem@cabac
-                    stream.frameRate = StreamItem@frameRate
-                    stream.level = StreamItem@level
+                    stream.width = parseInt(StreamItem@width)
+                    stream.height = parseInt(StreamItem@height)
+                    stream.frameRate = parseFloat(StreamItem@frameRate)
+                    stream.level = numtostr(parseFloat(StreamItem@level) / 10.0)
                     stream.profile = StreamItem@profile
-                    stream.refFrames = StreamItem@refFrames
-                    stream.bitDepth = StreamItem@bitDepth
+                    stream.refFrames = parseInt(StreamItem@refFrames)
                     stream.anamorphic = (StreamItem@anamorphic = "1")
+
+                    stream.description += " " + numtostr(stream.width) + "x"  + numtostr(stream.height) + "@"  + numtostr(stream.frameRate)
                 end if
 
-                bitrateSum = bitrateSum + validint(strtoi(firstOf(StreamItem@bitrate, "0")))
+                if stream.streamType = "2" then
+                    stream.samplingRate = parseInt(StreamItem@samplingRate)
+                    stream.level = StreamItem@level
+                    stream.profile = StreamItem@profile
+                    stream.audioChannelLayout = StreamItem@audioChannelLayout
+
+                    stream.description += " " + stream.language + " " + stream.audioChannelLayout
+                end if
+
+                if stream.streamType = "3" then
+                    stream.description += " " + stream.language
+                end if
+
+
+                bitrateSum = bitrateSum + stream.bitRate
 
 				part.streams.Push(stream)
+
+                part.description += " | " + stream.description
+                Debug("part: " + part.description)
+
 			next
 			media.parts.Push(part)
+
+            media.description = description
+
+            Debug("media: " + media.description)
 		next
+
+
 
         ' The overall bitrate had better be at least the sum of its parts
         if bitrateSum > media.bitrate then media.bitrate = bitrateSum
+
+        ' PrintAA(media)
 
 		'* TODO: deal with multiple parts correctly. Not sure how audio etc selection works
 		'* TODO: with multi-part
 		media.preferredPart = media.parts[0]
         media.curPartIndex = 0
 		mediaArray.Push(media)
+
+
+
 	next
 
+
     m.media = mediaArray
+
+
 End Sub
 
 '* Logic for choosing which Media item to use from the collection of possibles.
@@ -384,7 +452,7 @@ Sub PickMediaItem(hasDetails)
     mediaItems = m.media
     quality = GetQualityForItem(m)
     if quality >= 9 then
-        maxResolution = 1080
+        maxResolution = 4096
     else if quality >= 6 then
         maxResolution = 720
     else if quality >= 5 then
@@ -401,7 +469,7 @@ Sub PickMediaItem(hasDetails)
 
     for each mediaItem in mediaItems
         score = 0
-        resolution = firstOf(mediaItem.videoResolution, "0").toInt()
+        resolution = mediaItem.height
 
         ' If we'll be able to direct play, exit immediately
         if resolution <= maxResolution AND hasDetails = true AND videoCanDirectPlay(mediaItem, m.server) then
@@ -428,7 +496,7 @@ Sub PickMediaItem(hasDetails)
                         score = score + 20
                     end if
                 else if stream.streamType = "2" then
-                    channels = firstOf(stream.channels, "2").toInt()
+                    channels = stream.channels
 
                     if (stream.codec = "aac" AND channels <= 2) OR (stream.codec = "ac3" AND supportsSurround) then
                         score = score + 10

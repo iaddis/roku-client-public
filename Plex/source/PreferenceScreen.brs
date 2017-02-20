@@ -1171,19 +1171,24 @@ Function createVideoOptionsScreen(item, viewController, continuousPlay) As Objec
                 language = GetSafeLanguageName(stream)
                 format = ucase(firstOf(stream.Codec, ""))
                 if format = "DCA" then format = "DTS"
-                if stream.Channels <> invalid then
-                    if stream.Channels = "2" then
-                        format = format + " Stereo"
-                    else if stream.Channels = "1" then
-                        format = format + " Mono"
-                    else if stream.Channels = "6" then
-                        format = format + " 5.1"
-                    else if stream.Channels = "7" then
-                        format = format + " 6.1"
-                    else if stream.Channels = "8" then
-                        format = format + " 7.1"
-                    end if
+''                if stream.Channels <> invalid then
+''                    if stream.Channels = 2 then
+''                        format = format + " Stereo"
+''                    else if stream.Channels = 1 then
+''                        format = format + " Mono"
+''                    else if stream.Channels = 6 then
+''                        format = format + " 5.1"
+''                    else if stream.Channels = 7 then
+''                        format = format + " 6.1"
+''                    else if stream.Channels = 8 then
+''                        format = format + " 7.1"
+''                    end if
+''                end if
+
+                if stream.audioChannelLayout <> invalid then
+                    format = format + " " + stream.audioChannelLayout
                 end if
+
                 if format <> "" then
                     title = language + " (" + format + ")"
                 else

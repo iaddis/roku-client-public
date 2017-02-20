@@ -74,6 +74,12 @@ Sub containerParseXml()
     end if
 
     nodes = m.xml.GetChildElements()
+    if nodes = invalid then
+        Debug("containerParseXml no child elements")
+        m.Parsed = true
+        return
+    end if
+
     for each n in nodes
         nodeType = firstOf(n@type, m.ViewGroup)
 

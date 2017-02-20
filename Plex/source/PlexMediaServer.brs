@@ -356,7 +356,16 @@ Function pmsConstructVideoItem(item, seekValue, allowDirectPlay, forceDirectPlay
     if GetGlobal("DisplayType") = "HDTV" then quality = "HD"
     Debug("Setting stream quality: " + quality)
     video.StreamQualities = [quality]
-    video.HDBranded = item.HDBranded
+
+    if mediaItem.height >= 720
+        video.HDBranded = true
+        video.IsHD = true
+    endif
+
+    if mediaItem.height >= 1080
+        video.FullHD = true
+    endif
+
 
 	'Setup 1080p metadata
     if videoRes = "1080" then
@@ -410,7 +419,7 @@ Function pmsConstructVideoItem(item, seekValue, allowDirectPlay, forceDirectPlay
     else if allowDirectPlay AND mediaItem <> invalid then
         Debug("Checking to see if direct play of video is possible")
         if qualityPref >= 9 then
-            maxResolution = 1080
+            maxResolution = 4096
         else if qualityPref >= 6 then
             maxResolution = 720
         else if qualityPref >= 5 then
