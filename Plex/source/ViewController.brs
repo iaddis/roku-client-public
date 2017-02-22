@@ -398,6 +398,33 @@ function videoMediaString(media)
     return mediaName
 end function
 
+sub showChannelSGScreen()
+  print "in showChannelSGScreen"
+  screen = CreateObject("roSGScreen")
+  m.port = CreateObject("roMessagePort")
+  screen.setMessagePort(m.port)
+  'scene = screen.CreateScene("rectangleScene")
+  scene = screen.CreateScene("NodeSelectionList")
+  screen.show()
+ 
+  while(true)
+    msg = wait(0, m.port)
+    msgType = type(msg)
+ 
+    if msgType = "roSGScreenEvent"
+    if msg.isScreenClosed() then return
+    end if
+  end while
+end sub
+
+
+Function doTestUI()
+
+    print "doTestUI"
+    showChannelSGScreen()
+    Debug("doTestUI")
+end function
+
 
 Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=true)
     ' Create a facade screen for instant feedback.
@@ -410,25 +437,28 @@ Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=tr
     ' Make sure we have full details before trying to play.
     metadata.ParseDetails()
 
-    skipSelection = false    
+    doTestUI()
+
+    skipSelection = true
 
 
     if NOT(skipSelection) and NOT(metadata.isManuallySelectedMediaItem = true) and metadata.media <> invalid and metadata.media.count() > 1 then
         dlg = createBaseDialog()
-        dlg.Title = "Select a Quality"
+        dlg.Title = "Select Media"
+
+        'dlg.Text =  CreateObject("roArray", 0, true)
 
         mediaIndex = 0
         for each media in metadata.media
-            if media.AsString <> invalid then
-                mediaName = media.AsString
-            else
-                mediaName = videomediaString(media)
-                media.AsString = mediaName
-            end if
+            mediaName = media.description
+
+            'dlg.Text.Push(mediaName)
 
             dlg.SetButton(tostr(mediaIndex), mediaName)
             mediaIndex = mediaIndex+1
         end for
+
+
 
         dlg.Show(true)
 

@@ -60,6 +60,8 @@ Sub dialogRefresh()
     m.Screen.EnableOverlay(overlay)
     if m.Title <> invalid then m.Screen.SetTitle(m.Title)
 
+    ' m.Screen.width = 1024
+
     if m.Text <> invalid then
         if islist(m.Text) then
             for each paragraph in m.Text
@@ -83,8 +85,10 @@ Sub dialogRefresh()
         if button[cmd] = "_rate_" then
             m.Screen.AddRatingButton(buttonCount, m.Item.UserRating, m.Item.StarRating, "")
         else
-            m.Screen.AddButton(buttonCount, button[cmd])
+            m.Screen.AddLeftButton(buttonCount, button[cmd])
         end if
+
+        'm.Screen.AddStaticText("We always use the global message port, but there are some places that")
         buttonCount = buttonCount + 1
     next
 

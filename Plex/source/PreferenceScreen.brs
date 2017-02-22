@@ -1271,8 +1271,17 @@ Function createVideoOptionsScreen(item, viewController, continuousPlay) As Objec
                 media.AsString = mediaName
             end if
 
-            mediaOptions.Push({ title: mediaName, EnumValue: tostr(mediaIndex) })
+            mediaName = media.description
+
+            mediaOptions.Push({ title: media.title, EnumValue: tostr(mediaIndex),
+            Description: media.description,
+            ShortDescriptionLine1:media.description,
+            ShortDescriptionLine2:media.streamDescription
+
+             })
             mediaIndex = mediaIndex + 1
+
+            Debug(media.streamDescription)
 
             'if media = item.preferredMediaItem then
                 'defaultMedia = mediaName

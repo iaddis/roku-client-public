@@ -357,6 +357,7 @@ Function pmsConstructVideoItem(item, seekValue, allowDirectPlay, forceDirectPlay
     Debug("Setting stream quality: " + quality)
     video.StreamQualities = [quality]
 
+    ' set HD Branding based on height of video
     if mediaItem.height >= 720
         video.HDBranded = true
         video.IsHD = true
@@ -949,7 +950,7 @@ Sub pmsAddDirectPlayInfo(video, item, mediaKey)
     Debug("Will try to direct play " + tostr(mediaFullUrl))
     video.StreamUrls = [mediaFullUrl]
     video.StreamBitrates = [mediaItem.bitrate]
-    video.FrameRate = item.FrameRate
+    video.FrameRate = mediaItem.FrameRate
     video.IsTranscoded = false
     video.StreamFormat = firstOf(mediaItem.container, "mp4")
     if video.StreamFormat = "hls" then video.SwitchingStrategy = "full-adaptation"

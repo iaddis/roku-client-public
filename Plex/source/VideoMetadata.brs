@@ -235,23 +235,6 @@ Sub setVideoDetails(video, container, videoItemXml, hasDetails=true)
         video.Categories.Push(Category@tag)
     next
 
-    ' TODO: review the logic here. Last media item wins. Is this what we want?
-    for each MediaItem in videoItemXml.Media
-        videoResolution = MediaItem@videoResolution
-        if videoResolution = "1080" OR videoResolution = "720" then
-            video.HDBranded = true
-        endif
-        frameRate = MediaItem@videoFrameRate
-        if frameRate <> invalid then
-            if frameRate = "24p" then
-                video.FrameRate = 24
-            else if frameRate = "NTSC"
-                video.FrameRate = 30
-            endif
-        endif
-        video.OptimizedForStreaming = MediaItem@optimizedForStreaming
-    next
-
     video.ParseVideoMedia(videoItemXml, container.sourceUrl)
     video.PickMediaItem(hasDetails)
 End Sub
@@ -323,12 +306,25 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
         media.bitrate = parseInt(MediaItem@bitrate)
         media.width = parseInt(MediaItem@width)
         media.height = parseInt(MediaItem@height)
+        media.OptimizedForStreaming = MediaItem@optimizedForStreaming
+        media.title = ""
 
+        ' convert video frame rate to a number
+        if media.videoFrameRate <> invalid then
+            if media.videoFrameRate = "24p" then
+                media.FrameRate = 24
+            else if media.videoFrameRate = "NTSC"
+                media.FrameRate = 30
+            endif
+        endif
 
+        ' create media description string
         media.description = ""
         if media.container <> invalid then
             media.description += media.container + " " + numtostr(media.bitrate) + "kbps"
         endif
+
+        media.streamDescription = ""
 
         bitrateSum = 0
 
@@ -348,8 +344,10 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
             part.duration = parseInt(MediaPart@duration)
             part.hasChapterVideoStream = (MediaPart@hasChapterVideoStream = "1")
             part.startOffset = startOffset
-            part.description = media.description
+            part.description = ""
             startOffset = startOffset + part.duration
+
+            media.title = MediaPart@file
 
             part.indexes = CreateObject("roAssociativeArray")
             if MediaPart@indexes <> invalid then
@@ -372,7 +370,7 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
                 stream.key = StreamItem@key
                 stream.bitRate = parseInt(StreamItem@bitrate)
                 stream.bitDepth = parseInt(StreamItem@bitDepth)
-                stream.description = stream.codec
+                stream.description = ""
 
 
                 if stream.selected <> invalid then
@@ -391,7 +389,9 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
                     stream.refFrames = parseInt(StreamItem@refFrames)
                     stream.anamorphic = (StreamItem@anamorphic = "1")
 
-                    stream.description += " " + numtostr(stream.width) + "x"  + numtostr(stream.height) + "@"  + numtostr(stream.frameRate)
+                    stream.description += stream.codec 
+                    stream.description += " (" + numtostr(stream.width) + "x"  + numtostr(stream.height) + "@"  + numtostr(stream.frameRate) + ")"
+
                 end if
 
                 if stream.streamType = "2" then
@@ -400,28 +400,43 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
                     stream.profile = StreamItem@profile
                     stream.audioChannelLayout = StreamItem@audioChannelLayout
 
-                    stream.description += " " + stream.language + " " + stream.audioChannelLayout
+                    if stream.languageCode <> invalid then
+                        stream.description += " " + stream.languageCode 
+                    endif
+                    stream.description += " " + stream.codec 
+                    stream.description += " " + stream.audioChannelLayout
                 end if
 
                 if stream.streamType = "3" then
-                    stream.description += " " + stream.language
+                    ' if stream.languageCode <> invalid then
+                    '    stream.description += " " + stream.languageCode 
+                    'endif
+                    ' stream.description += " " + stream.codec 
                 end if
 
 
                 bitrateSum = bitrateSum + stream.bitRate
 
 				part.streams.Push(stream)
-
-                part.description += " | " + stream.description
-                Debug("part: " + part.description)
+                ' Debug("stream: " + stream.description)
+                if part.description <> ""
+                    ' part.description += ", "
+                    part.description += chr(10)
+                endif  
+                part.description += stream.description
 
 			next
 			media.parts.Push(part)
+            ' Debug("part: " + part.description)
 
-            media.description = description
+            if media.streamDescription <> ""
+               media.streamDescription += chr(10)
+            endif  
+            media.streamDescription += part.description
 
-            Debug("media: " + media.description)
 		next
+        
+        ' Debug("media: " + media.description)
 
 
 
